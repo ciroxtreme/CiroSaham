@@ -8,9 +8,12 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -28,6 +31,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -50,30 +54,59 @@ fun formatRupiah(amount: Double): String {
     return format.format(amount).replace("Rp", "Rp ")
 }
 
-val DarkBg = Color(0xFF0B0E14)
-val CardBg = Color(0xFF151B26)
-val EmeraldGreen = Color(0xFF10B981)
-val CoralRed = Color(0xFFEF4444)
-val TextMuted = Color(0xFF8B949E)
-val BorderColor = Color(0xFF212936)
+// Light & Fresh Theme Palettes
+val WhiteBg = Color(0xFFFFFFFF)
+val SurfaceBg = Color(0xFFF8FAFC)
+val CardBorder = Color(0xFFE2E8F0)
+val PrimaryGreen = Color(0xFF00A86B) // Aksen hijau segar khas Sekuritas
+val LightGreenText = Color(0xFF00A86B)
+val LightRedText = Color(0xFFE11D48)
+val DarkText = Color(0xFF0F172A)
+val MutedText = Color(0xFF64748B)
+val DividerGray = Color(0xFFF1F5F9)
+
+// Helper Brand Color Avatar Emiten
+fun getAvatarColor(symbol: String): Color {
+    return when (symbol.uppercase()) {
+        "DFAM" -> Color(0xFF0D9488) // Hijau Teal
+        "MKNT" -> Color(0xFF7C3AED) // Ungu Modern
+        "ROCK" -> Color(0xFF1E293B) // Hitam Elegan
+        "AKPI" -> Color(0xFF0284C7) // Biru Cerah
+        "BLTA" -> Color(0xFFDC2626) // Merah Bendera Tanker
+        "BBRI" -> Color(0xFF0284C7) // Biru BRI
+        "BBCA" -> Color(0xFF1D4ED8) // Biru BCA
+        "BMRI" -> Color(0xFFD97706) // Kuning Emas Mandiri
+        "ANTM" -> Color(0xFF059669) // Hijau Antam
+        "BUMI" -> Color(0xFFB45309) // Emas Bumi
+        "PTRO" -> Color(0xFF4338CA) // Indigo Petrosea
+        "GOTO" -> Color(0xFF16A34A) // Hijau Gojek
+        else -> Color(0xFF475569)
+    }
+}
 
 @Composable
 fun CiroSahamApp(viewModel: MainViewModel = viewModel()) {
-    var selectedTab by remember { mutableStateOf(0) }
+    var selectedTab by remember { mutableStateOf(2) } // Default tab: Pasar (sesuai foto kedua)
     val tabs = listOf("Dashboard", "Portofolio", "Pasar", "Analisis", "Radar")
 
     Scaffold(
-        containerColor = DarkBg,
+        containerColor = WhiteBg,
         bottomBar = {
             NavigationBar(
-                containerColor = CardBg,
+                containerColor = WhiteBg,
                 tonalElevation = 8.dp
             ) {
                 tabs.forEachIndexed { index, title ->
                     NavigationBarItem(
                         selected = selectedTab == index,
                         onClick = { selectedTab = index },
-                        label = { Text(title, fontSize = 11.sp) },
+                        label = {
+                            Text(
+                                title,
+                                fontSize = 11.sp,
+                                fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal
+                            )
+                        },
                         icon = {
                             when (index) {
                                 0 -> Icon(Icons.Default.Dashboard, contentDescription = title)
@@ -84,11 +117,11 @@ fun CiroSahamApp(viewModel: MainViewModel = viewModel()) {
                             }
                         },
                         colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = EmeraldGreen,
-                            selectedTextColor = EmeraldGreen,
-                            unselectedIconColor = TextMuted,
-                            unselectedTextColor = TextMuted,
-                            indicatorColor = Color(0xFF1F2937)
+                            selectedIconColor = PrimaryGreen,
+                            selectedTextColor = PrimaryGreen,
+                            unselectedIconColor = MutedText,
+                            unselectedTextColor = MutedText,
+                            indicatorColor = Color(0xFFE6F4EA)
                         )
                     )
                 }
@@ -99,6 +132,7 @@ fun CiroSahamApp(viewModel: MainViewModel = viewModel()) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+                .background(WhiteBg)
         ) {
             when (selectedTab) {
                 0 -> DashboardScreen(viewModel, onNavigateToMarket = { selectedTab = 2 })
@@ -133,21 +167,22 @@ fun DashboardScreen(viewModel: MainViewModel, onNavigateToMarket: () -> Unit) {
     if (showResetDialog) {
         AlertDialog(
             onDismissRequest = { showResetDialog = false },
-            title = { Text("Reset Portofolio Virtual?") },
-            text = { Text("Seluruh riwayat trading dan kepemilikan saham akan dihapus. Saldo kas akan kembali menjadi Rp 100.000.000.") },
+            title = { Text("Reset Portofolio Virtual?", color = DarkText) },
+            text = { Text("Seluruh riwayat trading dan kepemilikan saham akan dihapus. Saldo kas kembali menjadi Rp 100.000.000.", color = MutedText) },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.resetAccount()
                     showResetDialog = false
                 }) {
-                    Text("Ya, Reset", color = CoralRed)
+                    Text("Ya, Reset", color = LightRedText, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showResetDialog = false }) {
-                    Text("Batal")
+                    Text("Batal", color = MutedText)
                 }
-            }
+            },
+            containerColor = WhiteBg
         )
     }
 
@@ -164,8 +199,8 @@ fun DashboardScreen(viewModel: MainViewModel, onNavigateToMarket: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column {
-                    Text("CiroSaham Terminal", fontSize = 14.sp, color = TextMuted)
-                    Text("Portofolio Virtual", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    Text("CiroSaham Terminal", fontSize = 13.sp, color = MutedText, fontWeight = FontWeight.Medium)
+                    Text("Portofolio Virtual", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = DarkText)
                 }
                 IconButton(onClick = { showResetDialog = true }) {
                     Icon(Icons.Default.RestartAlt, contentDescription = "Reset", tint = Color(0xFFF59E0B))
@@ -177,31 +212,31 @@ fun DashboardScreen(viewModel: MainViewModel, onNavigateToMarket: () -> Unit) {
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = CardBg),
+                colors = CardDefaults.cardColors(containerColor = SurfaceBg),
                 shape = RoundedCornerShape(16.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, BorderColor)
+                border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
-                    Text("TOTAL NILAI ASET (EQUITY)", fontSize = 12.sp, color = TextMuted, fontWeight = FontWeight.SemiBold)
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(formatRupiah(totalEquity), fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Text("TOTAL NILAI ASET (EQUITY)", fontSize = 12.sp, color = MutedText, fontWeight = FontWeight.SemiBold)
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(formatRupiah(totalEquity), fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = DarkText)
+                    Spacer(modifier = Modifier.height(16.dp))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Column {
-                            Text("Sisa Kas Menganggur", fontSize = 11.sp, color = TextMuted)
-                            Text(formatRupiah(cash), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF60A5FA))
+                            Text("Sisa Kas Menganggur", fontSize = 11.sp, color = MutedText)
+                            Text(formatRupiah(cash), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0284C7))
                         }
                         Column(horizontalAlignment = Alignment.End) {
-                            Text("Total Floating PnL", fontSize = 11.sp, color = TextMuted)
+                            Text("Total Floating PnL", fontSize = 11.sp, color = MutedText)
                             Text(
                                 "${if (totalPnL >= 0) "+" else ""}${formatRupiah(totalPnL)} (${String.format("%.2f", totalPnLPct)}%)",
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = if (totalPnL >= 0) EmeraldGreen else CoralRed
+                                color = if (totalPnL >= 0) LightGreenText else LightRedText
                             )
                         }
                     }
@@ -209,69 +244,68 @@ fun DashboardScreen(viewModel: MainViewModel, onNavigateToMarket: () -> Unit) {
             }
         }
 
-        // Equity Curve Chart
         item {
-            Card(
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = CardBg),
-                shape = RoundedCornerShape(16.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, BorderColor)
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("GRAFIK PERTUMBUHAN MODAL", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextMuted)
-                        Text("Simulasi 30 Hari", fontSize = 11.sp, color = EmeraldGreen)
-                    }
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    // Canvas Kurva Naik Turun Portofolio
-                    Canvas(modifier = Modifier
-                        .fillMaxWidth()
-                        .height(120.dp)) {
-                        val points = listOf(100.0, 99.2, 101.5, 100.8, 103.2, 102.7, 105.0, 104.2, 106.8, 108.5)
-                        val maxP = points.maxOrNull() ?: 110.0
-                        val minP = points.minOrNull() ?: 98.0
-                        val w = size.width
-                        val h = size.height
-
-                        val path = Path()
-                        points.forEachIndexed { i, p ->
-                            val x = (i.toFloat() / (points.size - 1)) * w
-                            val y = h - (((p - minP) / (maxP - minP)).toFloat() * h)
-                            if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
-                        }
-
-                        drawPath(path, color = EmeraldGreen, style = Stroke(width = 4f))
-                    }
+                Text("Saham yang Dimiliki", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = DarkText)
+                TextButton(onClick = onNavigateToMarket) {
+                    Text("Beli Saham Baru >", color = PrimaryGreen, fontWeight = FontWeight.SemiBold)
                 }
             }
         }
 
-        // Quick Actions & Watchlist Ringkas
-        item {
-            Text("SAHAM POPULER", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.White)
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                listOf("BBRI", "ANTM", "BBCA", "BREN", "BUMI").forEach { sym ->
-                    Card(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clickable {
-                                viewModel.selectStock(sym)
-                                onNavigateToMarket()
-                            },
-                        colors = CardDefaults.cardColors(containerColor = CardBg),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, BorderColor)
+        if (holdings.isEmpty()) {
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = SurfaceBg),
+                    shape = RoundedCornerShape(12.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
+                ) {
+                    Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                        Text("Belum ada portofolio saham. Silakan pilih di tab Pasar!", color = MutedText, fontSize = 13.sp)
+                    }
+                }
+            }
+        } else {
+            items(holdings) { item ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = WhiteBg),
+                    shape = RoundedCornerShape(12.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(14.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column(modifier = Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(sym, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .background(getAvatarColor(item.symbol), CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(item.symbol.take(2), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(item.symbol, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = DarkText)
+                                Text("${item.lot} Lot (${item.totalShares} lembar)", fontSize = 11.sp, color = MutedText)
+                            }
+                        }
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(formatRupiah(item.currentValue), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = DarkText)
+                            Text(
+                                "${if (item.unrealizedPnLPct >= 0) "+" else ""}${String.format("%.2f", item.unrealizedPnLPct)}%",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = if (item.unrealizedPnLPct >= 0) LightGreenText else LightRedText
+                            )
                         }
                     }
                 }
@@ -280,73 +314,73 @@ fun DashboardScreen(viewModel: MainViewModel, onNavigateToMarket: () -> Unit) {
     }
 }
 
-// ================= 2. PORTFOLIO SCREEN =================
+// ================= 2. PORTOFOLIO SCREEN =================
 @Composable
 fun PortfolioScreen(viewModel: MainViewModel, onTrade: (String) -> Unit) {
     val holdings by viewModel.holdings.collectAsState()
     val logs by viewModel.tradeLogs.collectAsState()
-    var subTab by remember { mutableStateOf(0) }
+    var selectedSubTab by remember { mutableStateOf(0) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        Text("Manajemen Portofolio", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.White)
-        Spacer(modifier = Modifier.height(12.dp))
-
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         TabRow(
-            selectedTabIndex = subTab,
-            containerColor = CardBg,
-            contentColor = EmeraldGreen
+            selectedTabIndex = selectedSubTab,
+            containerColor = WhiteBg,
+            contentColor = PrimaryGreen,
+            divider = { Divider(color = DividerGray) }
         ) {
-            Tab(selected = subTab == 0, onClick = { subTab = 0 }, text = { Text("Saham Aktif (${holdings.size})") })
-            Tab(selected = subTab == 1, onClick = { subTab = 1 }, text = { Text("Riwayat Transaksi (${logs.size})") })
+            Tab(selected = selectedSubTab == 0, onClick = { selectedSubTab = 0 }, text = { Text("Posisi Aktif (${holdings.size})") })
+            Tab(selected = selectedSubTab == 1, onClick = { selectedSubTab = 1 }, text = { Text("Riwayat Transaksi") })
         }
+
         Spacer(modifier = Modifier.height(16.dp))
 
-        if (subTab == 0) {
+        if (selectedSubTab == 0) {
             if (holdings.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Belum ada saham yang dibeli. Buka tab Pasar untuk mulai trading!", color = TextMuted, fontSize = 13.sp)
+                    Text("Belum ada posisi terbuka.", color = MutedText, fontSize = 13.sp)
                 }
             } else {
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     items(holdings) { item ->
                         Card(
                             modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = CardBg),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, BorderColor),
+                            colors = CardDefaults.cardColors(containerColor = WhiteBg),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder),
                             shape = RoundedCornerShape(12.dp)
                         ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
+                            Column(modifier = Modifier.padding(14.dp)) {
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Column {
-                                        Text(item.symbol, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                                        Text("${item.lot} Lot (${item.totalShares} lbr)", fontSize = 12.sp, color = TextMuted)
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Box(
+                                            modifier = Modifier.size(38.dp).background(getAvatarColor(item.symbol), CircleShape),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(item.symbol.take(2), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                        }
+                                        Spacer(modifier = Modifier.width(10.dp))
+                                        Column {
+                                            Text(item.symbol, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = DarkText)
+                                            Text("${item.lot} Lot @ Rp ${item.avgBuyPrice.toInt()}", fontSize = 11.sp, color = MutedText)
+                                        }
                                     }
                                     Column(horizontalAlignment = Alignment.End) {
-                                        Text(
-                                            "${if (item.unrealizedPnL >= 0) "+" else ""}${formatRupiah(item.unrealizedPnL)}",
-                                            fontSize = 15.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = if (item.unrealizedPnL >= 0) EmeraldGreen else CoralRed
-                                        )
+                                        Text(formatRupiah(item.currentValue), fontSize = 15.sp, fontWeight = FontWeight.Bold, color = DarkText)
                                         Text(
                                             "${if (item.unrealizedPnLPct >= 0) "+" else ""}${String.format("%.2f", item.unrealizedPnLPct)}%",
                                             fontSize = 12.sp,
-                                            color = if (item.unrealizedPnLPct >= 0) EmeraldGreen else CoralRed
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = if (item.unrealizedPnLPct >= 0) LightGreenText else LightRedText
                                         )
                                     }
                                 }
 
-                                Spacer(modifier = Modifier.height(12.dp))
-                                Divider(color = BorderColor)
-                                Spacer(modifier = Modifier.height(12.dp))
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Divider(color = DividerGray)
+                                Spacer(modifier = Modifier.height(10.dp))
 
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
@@ -354,15 +388,16 @@ fun PortfolioScreen(viewModel: MainViewModel, onTrade: (String) -> Unit) {
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Column {
-                                        Text("Avg: Rp ${item.avgBuyPrice.toInt()}", fontSize = 12.sp, color = TextMuted)
-                                        Text("Now: Rp ${item.currentPrice.toInt()}", fontSize = 12.sp, color = Color.White)
+                                        Text("Floating PnL: ${formatRupiah(item.unrealizedPnL)}", fontSize = 11.sp, color = if (item.unrealizedPnL >= 0) LightGreenText else LightRedText)
+                                        Text("Harga Kini: Rp ${item.currentPrice.toInt()}", fontSize = 11.sp, color = MutedText)
                                     }
                                     Button(
                                         onClick = { onTrade(item.symbol) },
-                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1F2937)),
-                                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
+                                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen),
+                                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+                                        shape = RoundedCornerShape(8.dp)
                                     ) {
-                                        Text("Kelola / Jual", fontSize = 12.sp, color = Color.White)
+                                        Text("Kelola / Jual", fontSize = 12.sp, color = Color.White, fontWeight = FontWeight.Bold)
                                     }
                                 }
                             }
@@ -373,20 +408,19 @@ fun PortfolioScreen(viewModel: MainViewModel, onTrade: (String) -> Unit) {
         } else {
             if (logs.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Belum ada riwayat transaksi.", color = TextMuted, fontSize = 13.sp)
+                    Text("Belum ada riwayat transaksi.", color = MutedText, fontSize = 13.sp)
                 }
             } else {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(logs) { log ->
                         Card(
                             modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = CardBg),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, BorderColor)
+                            colors = CardDefaults.cardColors(containerColor = WhiteBg),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder),
+                            shape = RoundedCornerShape(10.dp)
                         ) {
                             Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(12.dp),
+                                modifier = Modifier.fillMaxWidth().padding(12.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
@@ -395,17 +429,17 @@ fun PortfolioScreen(viewModel: MainViewModel, onTrade: (String) -> Unit) {
                                         modifier = Modifier
                                             .size(36.dp)
                                             .background(
-                                                if (log.action == "BUY") Color(0x2210B981) else Color(0x22EF4444),
+                                                if (log.action == "BUY") Color(0xFFE6F4EA) else Color(0xFFFFE4E6),
                                                 RoundedCornerShape(8.dp)
                                             ),
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        Text(log.action, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = if (log.action == "BUY") EmeraldGreen else CoralRed)
+                                        Text(log.action, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = if (log.action == "BUY") LightGreenText else LightRedText)
                                     }
                                     Spacer(modifier = Modifier.width(12.dp))
                                     Column {
-                                        Text(log.symbol, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                                        Text("${log.lot} Lot @ Rp ${log.price.toInt()}", fontSize = 11.sp, color = TextMuted)
+                                        Text(log.symbol, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = DarkText)
+                                        Text("${log.lot} Lot @ Rp ${log.price.toInt()}", fontSize = 11.sp, color = MutedText)
                                     }
                                 }
                                 if (log.action == "SELL") {
@@ -414,9 +448,9 @@ fun PortfolioScreen(viewModel: MainViewModel, onTrade: (String) -> Unit) {
                                             "${if (log.realizedPnL >= 0) "+" else ""}${formatRupiah(log.realizedPnL)}",
                                             fontSize = 13.sp,
                                             fontWeight = FontWeight.Bold,
-                                            color = if (log.realizedPnL >= 0) EmeraldGreen else CoralRed
+                                            color = if (log.realizedPnL >= 0) LightGreenText else LightRedText
                                         )
-                                        Text("Realized", fontSize = 10.sp, color = TextMuted)
+                                        Text("Realized", fontSize = 10.sp, color = MutedText)
                                     }
                                 }
                             }
@@ -428,39 +462,87 @@ fun PortfolioScreen(viewModel: MainViewModel, onTrade: (String) -> Unit) {
     }
 }
 
-// ================= 3. MARKET DETAIL SCREEN =================
+// ================= 3. MARKET SCREEN (PERSIS FOTO KEDUA) =================
 @Composable
 fun MarketScreen(viewModel: MainViewModel) {
     val stockDetail by viewModel.selectedStock.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val marketMovers by viewModel.marketMovers.collectAsState()
     val context = LocalContext.current
 
+    var selectedCategory by remember { mutableStateOf("Top Gainer") }
+    val categories = listOf("Top Gainer", "Top Loser", "Top Value", "Top Volume")
+
     var searchSymbol by remember { mutableStateOf("") }
-    var orderType by remember { mutableStateOf("BUY") } // BUY or SELL
+    var orderType by remember { mutableStateOf("BUY") }
     var lotInput by remember { mutableStateOf("10") }
     var showTradeSheet by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .background(WhiteBg)
     ) {
-        // Search Input
+        // Bar Kategori Tab Atas (Top Gainer, Top Loser, Top Value, Top Volume) Sesuai Foto Kedua
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(24.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            categories.forEach { cat ->
+                val isSelected = selectedCategory == cat
+                Column(
+                    modifier = Modifier
+                        .clickable { selectedCategory = cat }
+                        .padding(vertical = 4.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = cat,
+                        fontSize = 15.sp,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                        color = if (isSelected) PrimaryGreen else MutedText
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    if (isSelected) {
+                        Box(
+                            modifier = Modifier
+                                .height(3.dp)
+                                .width(64.dp)
+                                .background(PrimaryGreen, RoundedCornerShape(2.dp))
+                        )
+                    } else {
+                        Spacer(modifier = Modifier.height(3.dp))
+                    }
+                }
+            }
+        }
+
+        Divider(color = DividerGray, thickness = 1.dp)
+
+        // Area Pencarian Cepat
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
             OutlinedTextField(
                 value = searchSymbol,
                 onValueChange = { searchSymbol = it },
-                placeholder = { Text("Cari Saham (misal: BBCA, BBRI)", fontSize = 12.sp, color = TextMuted) },
+                placeholder = { Text("Cari Saham (misal: BBCA, DFAM)", fontSize = 12.sp, color = MutedText) },
                 modifier = Modifier.weight(1f),
                 singleLine = true,
+                shape = RoundedCornerShape(10.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = EmeraldGreen,
-                    unfocusedBorderColor = BorderColor,
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White
+                    focusedBorderColor = PrimaryGreen,
+                    unfocusedBorderColor = CardBorder,
+                    focusedTextColor = DarkText,
+                    unfocusedTextColor = DarkText
                 )
             )
             Button(
@@ -469,61 +551,97 @@ fun MarketScreen(viewModel: MainViewModel) {
                         viewModel.selectStock(searchSymbol)
                     }
                 },
-                colors = ButtonDefaults.buttonColors(containerColor = EmeraldGreen)
+                colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen),
+                shape = RoundedCornerShape(10.dp)
             ) {
-                Text("Cari")
+                Text("Cari", fontWeight = FontWeight.Bold)
             }
         }
-        Spacer(modifier = Modifier.height(12.dp))
 
-        if (isLoading) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = EmeraldGreen)
-            }
-        } else if (stockDetail != null) {
-            val d = stockDetail!!
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // Header Harga
-                item {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column {
-                            Text(d.symbol, fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                            Text("PT Bank Rakyat Indonesia (Persero) Tbk", fontSize = 11.sp, color = TextMuted)
-                        }
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text("Rp ${d.currentPrice.toInt()}", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                            Text(
-                                "${if (d.changePct >= 0) "+" else ""}${String.format("%.2f", d.changePct)}%",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = if (d.changePct >= 0) EmeraldGreen else CoralRed
-                            )
-                        }
+        // Tampilan List Saham Kategori (Sesuai Foto Kedua)
+        val currentList = marketMovers[selectedCategory] ?: emptyList()
+
+        LazyColumn(
+            modifier = Modifier
+                .weight(1f)
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(0.dp)
+        ) {
+            items(currentList) { item ->
+                StockMoverRow(
+                    item = item,
+                    onClick = {
+                        viewModel.selectStock(item.symbol)
                     }
-                }
+                )
+                Divider(color = DividerGray, thickness = 1.dp)
+            }
 
-                // Candlestick Chart View
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { /* Aksi selengkapnya */ }
+                        .padding(vertical = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Selengkapnya >",
+                        color = PrimaryGreen,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 14.sp
+                    )
+                }
+            }
+
+            // Bagian Detail Chart & Orderbook Saham Terpilih
+            if (stockDetail != null) {
+                val d = stockDetail!!
                 item {
+                    Spacer(modifier = Modifier.height(8.dp))
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = CardBg),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, BorderColor),
-                        shape = RoundedCornerShape(12.dp)
+                        colors = CardDefaults.cardColors(containerColor = SurfaceBg),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder),
+                        shape = RoundedCornerShape(16.dp)
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            Text("GRAFIK CANDLESTICK 3 BULAN", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextMuted)
-                            Spacer(modifier = Modifier.height(12.dp))
+                            // Header Detail Terpilih
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(
+                                        modifier = Modifier.size(44.dp).background(getAvatarColor(d.symbol), CircleShape),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(d.symbol.take(2), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                                    }
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column {
+                                        Text(d.symbol, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = DarkText)
+                                        Text(d.companyName, fontSize = 11.sp, color = MutedText)
+                                    }
+                                }
+                                Column(horizontalAlignment = Alignment.End) {
+                                    Text("Rp ${d.currentPrice.toInt()}", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = DarkText)
+                                    Text(
+                                        "${if (d.changePct >= 0) "+" else ""}${String.format("%.2f", d.changePct)}%",
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (d.changePct >= 0) LightGreenText else LightRedText
+                                    )
+                                }
+                            }
 
-                            Canvas(modifier = Modifier
-                                .fillMaxWidth()
-                                .height(160.dp)) {
+                            Spacer(modifier = Modifier.height(14.dp))
+                            Text("GRAFIK CANDLESTICK 3 BULAN", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MutedText)
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            // Candlestick View
+                            Canvas(modifier = Modifier.fillMaxWidth().height(150.dp)) {
                                 if (d.candles.isNotEmpty()) {
                                     val candleList = d.candles.takeLast(25)
                                     val minPx = candleList.minOf { it.low }
@@ -534,16 +652,14 @@ fun MarketScreen(viewModel: MainViewModel) {
                                     candleList.forEachIndexed { i, c ->
                                         val x = i * w + (w / 2)
                                         val isUp = c.close >= c.open
-                                        val color = if (isUp) EmeraldGreen else CoralRed
+                                        val color = if (isUp) PrimaryGreen else LightRedText
 
                                         val highY = size.height - (((c.high - minPx) / range).toFloat() * size.height)
                                         val lowY = size.height - (((c.low - minPx) / range).toFloat() * size.height)
                                         val openY = size.height - (((c.open - minPx) / range).toFloat() * size.height)
                                         val closeY = size.height - (((c.close - minPx) / range).toFloat() * size.height)
 
-                                        // Wick
-                                        drawLine(color, Offset(x, highY), Offset(x, lowY), strokeWidth = 2f)
-                                        // Body
+                                        drawLine(color, Offset(x, highY), Offset(x, lowY), strokeWidth = 2.5f)
                                         val topBody = minOf(openY, closeY)
                                         val botBody = maxOf(openY, closeY)
                                         drawRect(
@@ -554,76 +670,64 @@ fun MarketScreen(viewModel: MainViewModel) {
                                     }
                                 }
                             }
-                        }
-                    }
-                }
 
-                // 10-Level Order Book Ladder
-                item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = CardBg),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, BorderColor),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text("LEVEL 2 ORDER BOOK DEPTH", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextMuted)
-                            Spacer(modifier = Modifier.height(10.dp))
-
-                            Row(modifier = Modifier.fillMaxWidth()) {
-                                Text("BID (Lot)", modifier = Modifier.weight(1f), fontSize = 11.sp, color = EmeraldGreen, fontWeight = FontWeight.Bold)
-                                Text("OFFER (Lot)", modifier = Modifier.weight(1f), fontSize = 11.sp, color = CoralRed, fontWeight = FontWeight.Bold, textAlign = androidx.compose.ui.text.style.TextAlign.End)
-                            }
+                            Spacer(modifier = Modifier.height(14.dp))
+                            Text("LEVEL 2 ORDER BOOK DEPTH", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MutedText)
                             Spacer(modifier = Modifier.height(8.dp))
 
-                            d.bids.zip(d.offers).forEach { (b, o) ->
+                            Row(modifier = Modifier.fillMaxWidth()) {
+                                Text("BID (Lot)", modifier = Modifier.weight(1f), fontSize = 11.sp, color = PrimaryGreen, fontWeight = FontWeight.Bold)
+                                Text("OFFER (Lot)", modifier = Modifier.weight(1f), fontSize = 11.sp, color = LightRedText, fontWeight = FontWeight.Bold, textAlign = TextAlign.End)
+                            }
+                            Spacer(modifier = Modifier.height(6.dp))
+
+                            d.bids.zip(d.offers).take(6).forEach { (b, o) ->
                                 Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 3.dp),
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
                                     Row(modifier = Modifier.weight(1f), horizontalArrangement = Arrangement.SpaceBetween) {
-                                        Text("${b.price.toInt()}", fontSize = 12.sp, color = EmeraldGreen, fontWeight = FontWeight.SemiBold)
-                                        Text("${b.lot}", fontSize = 12.sp, color = Color.White)
+                                        Text("${b.price.toInt()}", fontSize = 12.sp, color = PrimaryGreen, fontWeight = FontWeight.SemiBold)
+                                        Text("${b.lot}", fontSize = 12.sp, color = DarkText)
                                     }
                                     Spacer(modifier = Modifier.width(16.dp))
                                     Row(modifier = Modifier.weight(1f), horizontalArrangement = Arrangement.SpaceBetween) {
-                                        Text("${o.lot}", fontSize = 12.sp, color = Color.White)
-                                        Text("${o.price.toInt()}", fontSize = 12.sp, color = CoralRed, fontWeight = FontWeight.SemiBold)
+                                        Text("${o.lot}", fontSize = 12.sp, color = DarkText)
+                                        Text("${o.price.toInt()}", fontSize = 12.sp, color = LightRedText, fontWeight = FontWeight.SemiBold)
                                     }
                                 }
                             }
-                        }
-                    }
-                }
 
-                // Tombol Eksekusi Order
-                item {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Button(
-                            onClick = {
-                                orderType = "BUY"
-                                showTradeSheet = true
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = EmeraldGreen),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text("BELI VIRTUAL", fontWeight = FontWeight.Bold)
-                        }
+                            Spacer(modifier = Modifier.height(14.dp))
+                            // Tombol Beli / Jual Virtual
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                Button(
+                                    onClick = {
+                                        orderType = "BUY"
+                                        showTradeSheet = true
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen),
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(10.dp)
+                                ) {
+                                    Text("BELI VIRTUAL", fontWeight = FontWeight.Bold)
+                                }
 
-                        Button(
-                            onClick = {
-                                orderType = "SELL"
-                                showTradeSheet = true
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = CoralRed),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text("JUAL VIRTUAL", fontWeight = FontWeight.Bold)
+                                Button(
+                                    onClick = {
+                                        orderType = "SELL"
+                                        showTradeSheet = true
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = LightRedText),
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(10.dp)
+                                ) {
+                                    Text("JUAL VIRTUAL", fontWeight = FontWeight.Bold)
+                                }
+                            }
                         }
                     }
                 }
@@ -639,19 +743,25 @@ fun MarketScreen(viewModel: MainViewModel) {
 
         AlertDialog(
             onDismissRequest = { showTradeSheet = false },
-            title = { Text("$orderType $sym @ Rp ${price.toInt()}") },
+            title = { Text("$orderType $sym @ Rp ${price.toInt()}", color = DarkText, fontWeight = FontWeight.Bold) },
             text = {
                 Column {
-                    Text("Masukkan jumlah lot:")
+                    Text("Masukkan jumlah lot:", color = MutedText)
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = lotInput,
                         onValueChange = { lotInput = it },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        singleLine = true
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = PrimaryGreen,
+                            unfocusedBorderColor = CardBorder,
+                            focusedTextColor = DarkText,
+                            unfocusedTextColor = DarkText
+                        )
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text("Total: ${formatRupiah(totalRp)}", fontWeight = FontWeight.Bold, color = Color.White)
+                    Text("Total: ${formatRupiah(totalRp)}", fontWeight = FontWeight.Bold, color = DarkText)
                 }
             },
             confirmButton = {
@@ -675,15 +785,80 @@ fun MarketScreen(viewModel: MainViewModel) {
                             )
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = if (orderType == "BUY") EmeraldGreen else CoralRed)
+                    colors = ButtonDefaults.buttonColors(containerColor = if (orderType == "BUY") PrimaryGreen else LightRedText)
                 ) {
                     Text("Konfirmasi $orderType")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showTradeSheet = false }) { Text("Batal") }
-            }
+                TextButton(onClick = { showTradeSheet = false }) { Text("Batal", color = MutedText) }
+            },
+            containerColor = WhiteBg
         )
+    }
+}
+
+// Komponen Baris Saham Sesuai Foto Kedua
+@Composable
+fun StockMoverRow(item: StockMoverItem, onClick: () -> Unit) {
+    val isPositive = item.changeNominal >= 0
+    val changeColor = if (isPositive) LightGreenText else LightRedText
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(vertical = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .background(getAvatarColor(item.symbol), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = item.symbol.take(2),
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp
+                )
+            }
+            Spacer(modifier = Modifier.width(14.dp))
+            Column {
+                Text(
+                    text = item.symbol,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = DarkText
+                )
+                Text(
+                    text = item.name,
+                    fontSize = 12.sp,
+                    color = MutedText,
+                    maxLines = 1
+                )
+            }
+        }
+
+        Column(horizontalAlignment = Alignment.End) {
+            Text(
+                text = "${item.price.toInt()}",
+                fontSize = 17.sp,
+                fontWeight = FontWeight.Bold,
+                color = DarkText
+            )
+            val nominalStr = if (isPositive) "+${item.changeNominal.toInt()}" else "${item.changeNominal.toInt()}"
+            val pctStr = String.format("%.2f", item.changePct)
+            Text(
+                text = "$nominalStr(+$pctStr%)",
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = changeColor
+            )
+        }
     }
 }
 
@@ -699,32 +874,34 @@ fun AnalyticsScreen(viewModel: MainViewModel) {
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
-            Text("Analisis Performa Trading", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.White)
-            Text("Statistik & Evaluasi Strategi", fontSize = 12.sp, color = TextMuted)
+            Text("Analisis Performa Trading", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = DarkText)
+            Text("Statistik & Evaluasi Strategi", fontSize = 12.sp, color = MutedText)
         }
 
         item {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Card(
                     modifier = Modifier.weight(1f),
-                    colors = CardDefaults.cardColors(containerColor = CardBg),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, BorderColor)
+                    colors = CardDefaults.cardColors(containerColor = SurfaceBg),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text("WIN RATE", fontSize = 11.sp, color = TextMuted, fontWeight = FontWeight.Bold)
-                        Text("${String.format("%.1f", metrics.winRatePct)}%", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = EmeraldGreen)
-                        Text("${metrics.totalWins} Win / ${metrics.totalLosses} Loss", fontSize = 11.sp, color = TextMuted)
+                        Text("WIN RATE", fontSize = 11.sp, color = MutedText, fontWeight = FontWeight.Bold)
+                        Text("${String.format("%.1f", metrics.winRatePct)}%", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = PrimaryGreen)
+                        Text("${metrics.totalWins} Win / ${metrics.totalLosses} Loss", fontSize = 11.sp, color = MutedText)
                     }
                 }
                 Card(
                     modifier = Modifier.weight(1f),
-                    colors = CardDefaults.cardColors(containerColor = CardBg),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, BorderColor)
+                    colors = CardDefaults.cardColors(containerColor = SurfaceBg),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text("PROFIT FACTOR", fontSize = 11.sp, color = TextMuted, fontWeight = FontWeight.Bold)
-                        Text(String.format("%.2f", metrics.profitFactor), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color(0xFF60A5FA))
-                        Text("Rasio Cuan / Rugi", fontSize = 11.sp, color = TextMuted)
+                        Text("PROFIT FACTOR", fontSize = 11.sp, color = MutedText, fontWeight = FontWeight.Bold)
+                        Text(String.format("%.2f", metrics.profitFactor), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0284C7))
+                        Text("Rasio Cuan / Rugi", fontSize = 11.sp, color = MutedText)
                     }
                 }
             }
@@ -733,20 +910,21 @@ fun AnalyticsScreen(viewModel: MainViewModel) {
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = CardBg),
-                border = androidx.compose.foundation.BorderStroke(1.dp, BorderColor)
+                colors = CardDefaults.cardColors(containerColor = SurfaceBg),
+                border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder),
+                shape = RoundedCornerShape(12.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("TOTAL REALIZED PnL", fontSize = 11.sp, color = TextMuted, fontWeight = FontWeight.Bold)
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Text("TOTAL REALIZED PnL", fontSize = 11.sp, color = MutedText, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(6.dp))
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("Akumulasi Profit (+):", fontSize = 12.sp, color = TextMuted)
-                        Text(formatRupiah(metrics.totalRealizedProfit), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = EmeraldGreen)
+                        Text("Akumulasi Profit (+):", fontSize = 12.sp, color = MutedText)
+                        Text(formatRupiah(metrics.totalRealizedProfit), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = PrimaryGreen)
                     }
                     Spacer(modifier = Modifier.height(4.dp))
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("Akumulasi Kerugian (-):", fontSize = 12.sp, color = TextMuted)
-                        Text(formatRupiah(metrics.totalRealizedLoss), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = CoralRed)
+                        Text("Akumulasi Kerugian (-):", fontSize = 12.sp, color = MutedText)
+                        Text(formatRupiah(metrics.totalRealizedLoss), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = LightRedText)
                     }
                 }
             }
@@ -755,13 +933,14 @@ fun AnalyticsScreen(viewModel: MainViewModel) {
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF334155))
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFF1F5F9)),
+                border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder),
+                shape = RoundedCornerShape(12.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("DIAGNOSIS & EVALUASI STRATEGI", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFF59E0B))
+                    Text("DIAGNOSIS & EVALUASI STRATEGI", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFD97706))
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text(metrics.evaluationNote, fontSize = 13.sp, color = Color.White, lineHeight = 20.sp)
+                    Text(metrics.evaluationNote, fontSize = 13.sp, color = DarkText, lineHeight = 20.sp)
                 }
             }
         }
@@ -780,8 +959,8 @@ fun RadarScreen(viewModel: MainViewModel, onPickStock: (String) -> Unit) {
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
-            Text("Radar Niat Bandar", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.White)
-            Text("Smart Money & Peta Kuadran Broker", fontSize = 12.sp, color = TextMuted)
+            Text("Radar Niat Bandar", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = DarkText)
+            Text("Smart Money & Peta Kuadran Broker", fontSize = 12.sp, color = MutedText)
         }
 
         if (stockDetail != null) {
@@ -789,29 +968,30 @@ fun RadarScreen(viewModel: MainViewModel, onPickStock: (String) -> Unit) {
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = CardBg),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, BorderColor)
+                    colors = CardDefaults.cardColors(containerColor = SurfaceBg),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text(d.symbol, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                            Text(d.tacticalSignal, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = EmeraldGreen)
+                            Text(d.symbol, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = DarkText)
+                            Text(d.tacticalSignal, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = PrimaryGreen)
                         }
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text("Foreign Flow: +Rp 80.3 Miliar (Net Buy)", fontSize = 12.sp, color = EmeraldGreen)
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text("Foreign Flow: +Rp 80.3 Miliar (Net Buy)", fontSize = 12.sp, color = PrimaryGreen, fontWeight = FontWeight.SemiBold)
                         Spacer(modifier = Modifier.height(12.dp))
 
-                        Text("BEDAH NIAT PEMBELI:", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextMuted)
+                        Text("BEDAH NIAT PEMBELI:", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MutedText)
                         Spacer(modifier = Modifier.height(4.dp))
                         d.buyerIntentList.forEach { line ->
-                            Text(line, fontSize = 12.sp, color = Color.White, modifier = Modifier.padding(vertical = 2.dp))
+                            Text(line, fontSize = 12.sp, color = DarkText, modifier = Modifier.padding(vertical = 2.dp))
                         }
 
                         Spacer(modifier = Modifier.height(12.dp))
-                        Text("BEDAH NIAT PENJUAL:", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextMuted)
+                        Text("BEDAH NIAT PENJUAL:", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MutedText)
                         Spacer(modifier = Modifier.height(4.dp))
                         d.sellerIntentList.forEach { line ->
-                            Text(line, fontSize = 12.sp, color = Color.White, modifier = Modifier.padding(vertical = 2.dp))
+                            Text(line, fontSize = 12.sp, color = DarkText, modifier = Modifier.padding(vertical = 2.dp))
                         }
                     }
                 }
@@ -819,12 +999,12 @@ fun RadarScreen(viewModel: MainViewModel, onPickStock: (String) -> Unit) {
         }
 
         item {
-            Text("RADAR SAHAM PILIHAN BANDAR", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            Text("RADAR SAHAM PILIHAN BANDAR", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = DarkText)
             Spacer(modifier = Modifier.height(8.dp))
             listOf(
                 Pair("BBRI", "Smart Buyback JP Morgan (Rp 35 M) @ 2.805"),
-                Pair("BUMI", "Smart Buyback UBS (Rp 23 M) @ 126"),
-                Pair("PTRO", "Akumulasi BNI & Mandiri (Rp 41 M)"),
+                Pair("DFAM", "Spekulatif Top Gainer (+33.93%)"),
+                Pair("ROCK", "Breakout Rally Saham Properti (+24.73%)"),
                 Pair("ANTM", "Averaging Down Plat Merah (Wait & See)")
             ).forEach { (sym, desc) ->
                 Card(
@@ -832,8 +1012,9 @@ fun RadarScreen(viewModel: MainViewModel, onPickStock: (String) -> Unit) {
                         .fillMaxWidth()
                         .padding(vertical = 4.dp)
                         .clickable { onPickStock(sym) },
-                    colors = CardDefaults.cardColors(containerColor = CardBg),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, BorderColor)
+                    colors = CardDefaults.cardColors(containerColor = WhiteBg),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder),
+                    shape = RoundedCornerShape(10.dp)
                 ) {
                     Row(
                         modifier = Modifier
@@ -842,11 +1023,20 @@ fun RadarScreen(viewModel: MainViewModel, onPickStock: (String) -> Unit) {
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column {
-                            Text(sym, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                            Text(desc, fontSize = 11.sp, color = TextMuted)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier.size(36.dp).background(getAvatarColor(sym), CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(sym.take(2), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                            }
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text(sym, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = DarkText)
+                                Text(desc, fontSize = 11.sp, color = MutedText)
+                            }
                         }
-                        Icon(Icons.Default.ChevronRight, contentDescription = "Pilih", tint = TextMuted)
+                        Icon(Icons.Default.ChevronRight, contentDescription = "Pilih", tint = MutedText)
                     }
                 }
             }

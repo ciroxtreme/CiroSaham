@@ -26,6 +26,27 @@ class StockRepository(context: Context) {
         private const val KEY_HOLDINGS = "portfolio_holdings"
         private const val KEY_TRADE_LOGS = "trade_logs"
         private const val DEFAULT_STARTING_CASH = 100_000_000.0 // 100 Juta
+
+        val KNOWN_NAMES = mapOf(
+            "DFAM" to "Dafam Property Indonesia Tbk.",
+            "MKNT" to "Mitra Komunikasi Nusantara Tbk.",
+            "ROCK" to "Rockfields Properti Indonesia Tbk",
+            "AKPI" to "Argha Karya Prima Industry Tbk.",
+            "BLTA" to "Berlian Laju Tanker Tbk",
+            "BBRI" to "Bank Rakyat Indonesia (Persero) Tbk.",
+            "BBCA" to "Bank Central Asia Tbk.",
+            "BMRI" to "Bank Mandiri (Persero) Tbk.",
+            "BBNI" to "Bank Negara Indonesia (Persero) Tbk.",
+            "ASII" to "Astra International Tbk.",
+            "TLKM" to "Telkom Indonesia (Persero) Tbk.",
+            "ANTM" to "Aneka Tambang Tbk.",
+            "BUMI" to "Bumi Resources Tbk.",
+            "PTRO" to "Petrosea Tbk.",
+            "GOTO" to "GoTo Gojek Tokopedia Tbk.",
+            "BRMS" to "Bumi Resources Minerals Tbk.",
+            "ADRO" to "Adaro Energy Indonesia Tbk.",
+            "MEDC" to "Medco Energi Internasional Tbk."
+        )
     }
 
     fun getVirtualCash(): Double {
@@ -147,11 +168,30 @@ class StockRepository(context: Context) {
         val yahooTicker = if (cleanSym.endsWith(".JK")) cleanSym else "$cleanSym.JK"
         val url = "https://query1.finance.yahoo.com/v8/finance/chart/$yahooTicker?interval=1d&range=3mo"
 
-        var curPrice = 2800.0
-        var prevClose = 2800.0
-        var high = 2850.0
-        var low = 2780.0
+        var curPrice = when (cleanSym) {
+            "DFAM" -> 75.0
+            "MKNT" -> 14.0
+            "ROCK" -> 2270.0
+            "AKPI" -> 635.0
+            "BLTA" -> 33.0
+            "ANTM" -> 2580.0
+            "BBRI" -> 4450.0
+            "BBCA" -> 9850.0
+            else -> 1200.0
+        }
+        var prevClose = when (cleanSym) {
+            "DFAM" -> 56.0
+            "MKNT" -> 11.0
+            "ROCK" -> 1820.0
+            "AKPI" -> 510.0
+            "BLTA" -> 28.0
+            "ANTM" -> 2880.0
+            else -> curPrice * 0.98
+        }
+        var high = curPrice * 1.02
+        var low = curPrice * 0.98
         val candles = mutableListOf<CandleStick>()
+        var resolvedCompanyName = KNOWN_NAMES[cleanSym] ?: "$cleanSym Tbk."
 
         try {
             val req = Request.Builder()
@@ -168,8 +208,12 @@ class StockRepository(context: Context) {
                     if (resultArr.length() > 0) {
                         val result = resultArr.getJSONObject(0)
                         val meta = result.getJSONObject("meta")
-                        curPrice = meta.optDouble("regularMarketPrice", 2800.0)
-                        prevClose = meta.optDouble("chartPreviousClose", curPrice)
+                        curPrice = meta.optDouble("regularMarketPrice", curPrice)
+                        prevClose = meta.optDouble("chartPreviousClose", prevClose)
+                        val shortName = meta.optString("shortName", "")
+                        if (shortName.isNotBlank() && KNOWN_NAMES[cleanSym] == null) {
+                            resolvedCompanyName = shortName
+                        }
 
                         val timestamps = result.optJSONArray("timestamp")
                         val indicators = result.getJSONObject("indicators")
@@ -208,10 +252,10 @@ class StockRepository(context: Context) {
         // Generate Realistis Orderbook 10 Ladder
         val bids = mutableListOf<OrderbookEntry>()
         val offers = mutableListOf<OrderbookEntry>()
-        val step = if (curPrice > 5000) 25.0 else if (curPrice > 2000) 10.0 else 5.0
+        val step = if (curPrice > 5000) 25.0 else if (curPrice > 2000) 10.0 else if (curPrice > 500) 5.0 else 1.0
 
         for (i in 1..8) {
-            val bPx = curPrice - (i - 1) * step
+            val bPx = (curPrice - (i - 1) * step).coerceAtLeast(1.0)
             val oPx = curPrice + i * step
             bids.add(OrderbookEntry(bPx, (5000L + (i * 1230L)), 20 + i * 5))
             offers.add(OrderbookEntry(oPx, (4200L + (i * 980L)), 15 + i * 4))
@@ -221,6 +265,7 @@ class StockRepository(context: Context) {
 
         StockMarketDetail(
             symbol = cleanSym,
+            companyName = resolvedCompanyName,
             currentPrice = curPrice,
             prevClose = prevClose,
             high = high,
@@ -242,6 +287,49 @@ class StockRepository(context: Context) {
                 "🔻 [AK] UBS ➔ 🏦 DISTRIBUSI BARANG KUNO (Paus Sepuh)"
             ),
             tacticalSignal = if (chgPct >= 0) "🚀 ACCUMULATION / ENTRY ZONE" else "⚠️ CAUTION / WAIT & SEE"
+        )
+    }
+
+    // Daftar Saham Bergerak: Top Gainer, Top Loser, Top Value, Top Volume
+    fun getMarketMovers(): Map<String, List<StockMoverItem>> {
+        val gainers = listOf(
+            StockMoverItem("DFAM", "Dafam Property Indonesia Tbk.", 75.0, 19.0, 33.93, 850_000, 63_750_000.0, "Top Gainer"),
+            StockMoverItem("MKNT", "Mitra Komunikasi Nusantara Tbk.", 14.0, 3.0, 27.27, 1_420_000, 19_880_000.0, "Top Gainer"),
+            StockMoverItem("ROCK", "Rockfields Properti Indonesia Tbk", 2270.0, 450.0, 24.73, 98_000, 222_460_000.0, "Top Gainer"),
+            StockMoverItem("AKPI", "Argha Karya Prima Industry Tbk.", 635.0, 125.0, 24.51, 310_000, 196_850_000.0, "Top Gainer"),
+            StockMoverItem("BLTA", "Berlian Laju Tanker Tbk", 33.0, 5.0, 17.86, 2_150_000, 70_950_000.0, "Top Gainer"),
+            StockMoverItem("BUMI", "Bumi Resources Tbk.", 142.0, 18.0, 14.52, 12_400_000, 1_760_800_000.0, "Top Gainer")
+        )
+
+        val losers = listOf(
+            StockMoverItem("ANTM", "Aneka Tambang Tbk.", 2580.0, -300.0, -10.42, 450_000, 1_161_000_000.0, "Top Loser"),
+            StockMoverItem("GOTO", "GoTo Gojek Tokopedia Tbk.", 54.0, -5.0, -8.47, 18_500_000, 999_000_000.0, "Top Loser"),
+            StockMoverItem("BRMS", "Bumi Resources Minerals Tbk.", 360.0, -28.0, -7.22, 3_200_000, 1_152_000_000.0, "Top Loser"),
+            StockMoverItem("MEDC", "Medco Energi Internasional Tbk.", 1180.0, -70.0, -5.60, 890_000, 1_050_200_000.0, "Top Loser"),
+            StockMoverItem("ADRO", "Adaro Energy Indonesia Tbk.", 3620.0, -190.0, -4.99, 1_100_000, 3_982_000_000.0, "Top Loser")
+        )
+
+        val values = listOf(
+            StockMoverItem("BBRI", "Bank Rakyat Indonesia (Persero) Tbk.", 4450.0, 50.0, 1.14, 25_000_000, 111_250_000_000.0, "Top Value"),
+            StockMoverItem("BBCA", "Bank Central Asia Tbk.", 9850.0, 75.0, 0.77, 9_500_000, 93_575_000_000.0, "Top Value"),
+            StockMoverItem("BMRI", "Bank Mandiri (Persero) Tbk.", 6600.0, -50.0, -0.75, 12_000_000, 79_200_000_000.0, "Top Value"),
+            StockMoverItem("ASII", "Astra International Tbk.", 5100.0, 125.0, 2.51, 8_000_000, 40_800_000_000.0, "Top Value"),
+            StockMoverItem("TLKM", "Telkom Indonesia (Persero) Tbk.", 2750.0, -20.0, -0.72, 14_000_000, 38_500_000_000.0, "Top Value")
+        )
+
+        val volumes = listOf(
+            StockMoverItem("GOTO", "GoTo Gojek Tokopedia Tbk.", 54.0, -5.0, -8.47, 18_500_000, 999_000_000.0, "Top Volume"),
+            StockMoverItem("BUMI", "Bumi Resources Tbk.", 142.0, 18.0, 14.52, 12_400_000, 1_760_800_000.0, "Top Volume"),
+            StockMoverItem("BBRI", "Bank Rakyat Indonesia (Persero) Tbk.", 4450.0, 50.0, 1.14, 25_000_000, 111_250_000_000.0, "Top Volume"),
+            StockMoverItem("BRMS", "Bumi Resources Minerals Tbk.", 360.0, -28.0, -7.22, 3_200_000, 1_152_000_000.0, "Top Volume"),
+            StockMoverItem("BLTA", "Berlian Laju Tanker Tbk", 33.0, 5.0, 17.86, 2_150_000, 70_950_000.0, "Top Volume")
+        )
+
+        return mapOf(
+            "Top Gainer" to gainers,
+            "Top Loser" to losers,
+            "Top Value" to values,
+            "Top Volume" to volumes
         )
     }
 }

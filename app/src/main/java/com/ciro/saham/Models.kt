@@ -40,6 +40,7 @@ data class OrderbookEntry(
 
 data class StockMarketDetail(
     val symbol: String,
+    val companyName: String = "",
     val currentPrice: Double,
     val prevClose: Double,
     val high: Double,
@@ -54,4 +55,15 @@ data class StockMarketDetail(
     val buyerIntentList: List<String> = emptyList(),
     val sellerIntentList: List<String> = emptyList(),
     val tacticalSignal: String = "Wait & See"
+)
+
+data class StockMoverItem(
+    val symbol: String,
+    val name: String,
+    val price: Double,
+    val changeNominal: Double,
+    val changePct: Double,
+    val volume: Long = 0,
+    val valueRupiah: Double = 0.0,
+    val category: String = "Top Gainer" // "Top Gainer", "Top Loser", "Top Value", "Top Volume"
 )

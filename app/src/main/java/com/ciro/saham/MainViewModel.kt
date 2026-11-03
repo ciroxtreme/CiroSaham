@@ -41,6 +41,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _metrics = MutableStateFlow(PerformanceMetrics())
     val metrics: StateFlow<PerformanceMetrics> = _metrics.asStateFlow()
 
+    private val _marketMovers = MutableStateFlow(repo.getMarketMovers())
+    val marketMovers: StateFlow<Map<String, List<StockMoverItem>>> = _marketMovers.asStateFlow()
+
     init {
         refreshAll()
         selectStock("BBRI")
@@ -50,6 +53,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _virtualCash.value = repo.getVirtualCash()
         _holdings.value = repo.getHoldings()
         _tradeLogs.value = repo.getTradeLogs()
+        _marketMovers.value = repo.getMarketMovers()
         calculateMetrics()
     }
 
@@ -124,7 +128,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             totalRealizedProfit = totalWinAmount,
             totalRealizedLoss = totalLossAmount,
             profitFactor = pf,
-            maxDrawdownPct = 12.4, // Est
+            maxDrawdownPct = 12.4,
             evaluationNote = eval
         )
     }

@@ -2,7 +2,7 @@ name: Build CiroSaham APK
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "master" ]
   workflow_dispatch:
 
 jobs:
@@ -41,7 +41,7 @@ jobs:
             cp "$APK_PATH" "CiroSaham-debug.apk"
             curl -F chat_id="${CHAT_ID}" \
                  -F document=@"CiroSaham-debug.apk" \
-                 -F caption="🚀 <b>APK CiroSaham Selesai Dikompilasi!</b>%0A%0A📱 <b>Aplikasi:</b> CiroSaham (Virtual Trading + Intel Bandar)%0A📦 <b>Package:</b> com.ciro.saham%0A✨ Siap diinstall / ditimpa langsung di HP Tuan Ciro!" \
+                 -F caption="🚀 <b>APK CiroSaham Selesai Dikompilasi!</b>%0A%0A📱 <b>Aplikasi:</b> CiroSaham (Virtual Trading + Clean UI)%0A📦 <b>Package:</b> com.ciro.saham%0A✨ Tampilan Top Gainer/Loser/Value/Volume persis referensi foto! Siap ditimpa langsung di HP Tuan Ciro!" \
                  -F parse_mode="HTML" \
                  "https://api.telegram.org/bot${BOT_TOKEN}/sendDocument"
           fi
