@@ -1,0 +1,47 @@
+name: Build CiroSaham APK
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build Debug APK
+        run: ./gradlew assembleDebug --stacktrace
+
+      - name: Upload APK to Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: CiroSaham-debug
+          path: app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Send APK to Telegram Tuan Ciro
+        if: success()
+        env:
+          BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          APK_PATH="app/build/outputs/apk/debug/app-debug.apk"
+          if [ -f "$APK_PATH" ]; then
+            cp "$APK_PATH" "CiroSaham-debug.apk"
+            curl -F chat_id="${CHAT_ID}" \
+                 -F document=@"CiroSaham-debug.apk" \
+                 -F caption="🚀 <b>APK CiroSaham Selesai Dikompilasi!</b>%0A%0A📱 <b>Aplikasi:</b> CiroSaham (Virtual Trading + Intel Bandar)%0A📦 <b>Package:</b> com.ciro.saham%0A✨ Siap diinstall / ditimpa langsung di HP Tuan Ciro!" \
+                 -F parse_mode="HTML" \
+                 "https://api.telegram.org/bot${BOT_TOKEN}/sendDocument"
+          fi
