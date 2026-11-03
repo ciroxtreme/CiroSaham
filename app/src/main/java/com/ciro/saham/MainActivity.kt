@@ -467,6 +467,7 @@ fun PortfolioScreen(viewModel: MainViewModel, onTrade: (String) -> Unit) {
 fun MarketScreen(viewModel: MainViewModel) {
     val stockDetail by viewModel.selectedStock.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val isMoversLoading by viewModel.isMoversLoading.collectAsState()
     val marketMovers by viewModel.marketMovers.collectAsState()
     val context = LocalContext.current
 
@@ -555,6 +556,12 @@ fun MarketScreen(viewModel: MainViewModel) {
                 shape = RoundedCornerShape(10.dp)
             ) {
                 Text("Cari", fontWeight = FontWeight.Bold)
+            }
+            IconButton(
+                onClick = { viewModel.loadLiveMarketMovers() },
+                modifier = Modifier.size(42.dp)
+            ) {
+                Icon(Icons.Default.Refresh, contentDescription = "Refresh Live", tint = PrimaryGreen)
             }
         }
 

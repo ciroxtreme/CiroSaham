@@ -41,20 +41,32 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _metrics = MutableStateFlow(PerformanceMetrics())
     val metrics: StateFlow<PerformanceMetrics> = _metrics.asStateFlow()
 
-    private val _marketMovers = MutableStateFlow(repo.getMarketMovers())
+    private val _marketMovers = MutableStateFlow<Map<String, List<StockMoverItem>>>(emptyMap())
     val marketMovers: StateFlow<Map<String, List<StockMoverItem>>> = _marketMovers.asStateFlow()
+
+    private val _isMoversLoading = MutableStateFlow(false)
+    val isMoversLoading: StateFlow<Boolean> = _isMoversLoading.asStateFlow()
 
     init {
         refreshAll()
-        selectStock("BBRI")
+        loadLiveMarketMovers()
+        selectStock("DFAM")
     }
 
     fun refreshAll() {
         _virtualCash.value = repo.getVirtualCash()
         _holdings.value = repo.getHoldings()
         _tradeLogs.value = repo.getTradeLogs()
-        _marketMovers.value = repo.getMarketMovers()
         calculateMetrics()
+    }
+
+    fun loadLiveMarketMovers() {
+        viewModelScope.launch {
+            _isMoversLoading.value = true
+            val liveData = repo.fetchLiveMarketMovers()
+            _marketMovers.value = liveData
+            _isMoversLoading.value = false
+        }
     }
 
     fun selectStock(symbol: String) {
